@@ -96,13 +96,11 @@ public class GridManagerUI : MonoBehaviour
             {
                 if (x == emptyCell.x && y == emptyCell.y) continue;
                 GameObject tileObj = Instantiate(tilePrefab, _rectTransform);
-                RectTransform tileRect = tileObj.GetComponent<RectTransform>();
-                if (tileRect != null)
+                if (tileObj.TryGetComponent<RectTransform>(out var tileRect))
                 {
                     SetRectTransformToGrid(tileRect, x, y, cellWidth, cellHeight);
                 }
-                TileUI tileUI = tileObj.GetComponent<TileUI>();
-                if (tileUI == null)
+                if (!tileObj.TryGetComponent<TileUI>(out var tileUI))
                 {
                     Debug.LogError("tilePrefab に TileUI スクリプトがアタッチされていません。");
                     continue;
@@ -157,10 +155,9 @@ public class GridManagerUI : MonoBehaviour
         // 空白セル座標を移動前のタイル位置へ更新
         emptyCell = new Vector2Int(x, y);
 
-        // アニメーションで見た目を移動（非同期）
+        // アニメーションで見た目を移動
         var (cellWidth, cellHeight) = CalculateCellSize();
-        RectTransform tileRect = movingTile.GetComponent<RectTransform>();
-        if (tileRect != null)
+        if (movingTile.TryGetComponent<RectTransform>(out var tileRect))
         {
             StartCoroutine(movingTile.AnimateToGridPosition(
                 movingTile.gridX, movingTile.gridY,
