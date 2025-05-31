@@ -147,25 +147,24 @@ public class GridManagerUI : MonoBehaviour
         // 空白セル座標を保持
         Vector2Int previousEmpty = emptyCell;
 
-        // gridTiles 配列の位置を入れ替え
+        // gridTiles 配列の位置を入れ替え（データ即時更新）
         gridTiles[emptyCell.x, emptyCell.y] = movingTile;
         gridTiles[x, y] = null;
 
-        // タイルを空白セルへ移動（位置再計算＆gridX,gridYも更新）
-        MoveTileToGrid(movingTile, previousEmpty.x, previousEmpty.y);
-        movingTile.MoveTo(previousEmpty.x, previousEmpty.y); // gridX, gridYも更新
+        // タイルのgridX,gridYも即時更新
+        movingTile.MoveTo(previousEmpty.x, previousEmpty.y);
 
         // 空白セル座標を移動前のタイル位置へ更新
         emptyCell = new Vector2Int(x, y);
-    }
 
-    private void MoveTileToGrid(TileUI tile, int x, int y)
-    {
-        RectTransform tileRect = tile.GetComponent<RectTransform>();
+        // アニメーションで見た目を移動（非同期）
         var (cellWidth, cellHeight) = CalculateCellSize();
+        RectTransform tileRect = movingTile.GetComponent<RectTransform>();
         if (tileRect != null)
         {
-            SetRectTransformToGrid(tileRect, x, y, cellWidth, cellHeight);
+            StartCoroutine(movingTile.AnimateToGridPosition(
+                movingTile.gridX, movingTile.gridY,
+                0.2f, cellWidth, cellHeight, spacing, null));
         }
     }
 }

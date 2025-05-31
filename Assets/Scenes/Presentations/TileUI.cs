@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -27,5 +28,28 @@ public class TileUI : MonoBehaviour
     {
         gridX = newX;
         gridY = newY;
+    }
+
+    // アニメーションでグリッド座標(x, y)へ移動（完了時コールバック付き）
+    public IEnumerator AnimateToGridPosition(int x, int y, float duration, float cellWidth, float cellHeight, float spacing, System.Action onComplete = null)
+    {
+        if (!TryGetComponent<RectTransform>(out var rect))
+        {
+            Debug.LogError($"RectTransform is null on {gameObject.name}");
+            onComplete?.Invoke();
+            yield break;
+        }
+        Vector2 start = rect.anchoredPosition;
+        Vector2 end = new(x * (cellWidth + spacing), -y * (cellHeight + spacing));
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            rect.anchoredPosition = Vector2.Lerp(start, end, elapsed / duration);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        rect.anchoredPosition = end;
+        rect.sizeDelta = new Vector2(cellWidth, cellHeight);
+        onComplete?.Invoke();
     }
 }
