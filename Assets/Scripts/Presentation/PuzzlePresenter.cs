@@ -10,7 +10,8 @@ namespace Presentation
     {
         public GameObject tilePrefab;
         public RectTransform boardParent;
-        [HideInInspector] public Dictionary<Domain.TileAddress, GameObject> TileObjects = new();
+        public float tileSpacing = 0f;
+        [HideInInspector] public Dictionary<TileAddress, GameObject> TileObjects = new();
 
         public void MoveTile(TileAddress from, TileAddress to)
         {
@@ -20,7 +21,7 @@ namespace Presentation
             StartCoroutine(AnimateTileMove(tileObj.GetComponent<RectTransform>(), to));
         }
 
-        public void OnPuzzleInitialized(Domain.PuzzleBoard board)
+        public void OnPuzzleInitialized(PuzzleBoard board)
         {
             foreach (var obj in TileObjects.Values)
                 Destroy(obj);
@@ -38,7 +39,7 @@ namespace Presentation
         {
             float parentWidth = boardParent.rect.width;
             float parentHeight = boardParent.rect.height;
-            float spacing = 0f; // TODO:必要に応じて
+            float spacing = tileSpacing; // パラメータ化
             float cellWidth = (parentWidth - spacing * (gridSize - 1)) / gridSize;
             float cellHeight = (parentHeight - spacing * (gridSize - 1)) / gridSize;
             rect.anchorMin = new Vector2(0, 1);
@@ -52,11 +53,11 @@ namespace Presentation
 
         private System.Collections.IEnumerator AnimateTileMove(RectTransform rect, TileAddress to)
         {
-            float duration = 0.2f;
+            float duration = 0.1f;
             float parentWidth = boardParent.rect.width;
             float parentHeight = boardParent.rect.height;
             int gridSize = (int)Mathf.Sqrt(TileObjects.Count + 1);
-            float spacing = 0f;
+            float spacing = tileSpacing;
             float cellWidth = (parentWidth - spacing * (gridSize - 1)) / gridSize;
             float cellHeight = (parentHeight - spacing * (gridSize - 1)) / gridSize;
             Vector2 start = rect.anchoredPosition;

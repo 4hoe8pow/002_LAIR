@@ -674,6 +674,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tilePrefab: {fileID: 4763095983833201105, guid: 64a936d2f6f684ce1afa6852ccbde2c3, type: 3}
   boardParent: {fileID: 2042932342}
+  tileSpacing: 16
 --- !u!1 &2042932341
 GameObject:
   m_ObjectHideFlags: 0
