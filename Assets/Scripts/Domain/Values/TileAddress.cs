@@ -1,7 +1,7 @@
 namespace Domain
 {
     // 値オブジェクト: タイルの座標
-    public struct TileAddress
+    public readonly struct TileAddress
     {
         public int X { get; }
         public int Y { get; }

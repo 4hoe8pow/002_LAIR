@@ -20,6 +20,8 @@ namespace Domain
 
         private void InitializeTiles()
         {
+            var speciesList = new List<Species> { Species.Fox, Species.Owl };
+            int speciesIndex = 0;
             for (int y = 0; y < _size; y++)
             {
                 for (int x = 0; x < _size; x++)
@@ -31,7 +33,9 @@ namespace Domain
                     }
                     else
                     {
-                        _tiles[x, y] = new Tile(new TileAddress(x, y));
+                        var species = speciesList[speciesIndex % speciesList.Count];
+                        _tiles[x, y] = new Tile(new TileAddress(x, y), species);
+                        speciesIndex++;
                     }
                 }
             }
