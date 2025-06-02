@@ -1,4 +1,5 @@
 using Domain;
+using Domain.Services;
 
 namespace Application
 {
@@ -12,6 +13,7 @@ namespace Application
             _output = output;
             _output.OnPuzzleInitialized(_board);
             _output.UpdateAllTileTestimonyTexts(_board);
+            ShowTestimonyIndicator();
         }
 
         public void OnTileSwipe(TileAddress address, SwipeDirection direction)
@@ -20,6 +22,14 @@ namespace Application
             var empty = _board.EmptyCell;
             _board.SwapWithEmpty(address);
             _output.MoveTile(address, empty);
+            ShowTestimonyIndicator();
+        }
+
+        private void ShowTestimonyIndicator()
+        {
+            int valid = TestimonyCountService.CountValidTestimonies(_board);
+            int total = _board.Size * _board.Size - 1;
+            _output.ShowValidTestimonyCount(valid, total);
         }
     }
 }

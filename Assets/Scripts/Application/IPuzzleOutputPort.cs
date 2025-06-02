@@ -8,5 +8,6 @@ namespace Application
         void OnPuzzleInitialized(PuzzleBoard board);
         void UpdateTileTestimonyText(Tile tile);
         void UpdateAllTileTestimonyTexts(PuzzleBoard board);
+        void ShowValidTestimonyCount(int count, int total);
     }
 }

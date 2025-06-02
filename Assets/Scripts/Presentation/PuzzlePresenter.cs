@@ -13,6 +13,7 @@ namespace Presentation
         public RectTransform boardParent;
         public float tileSpacing = 0f;
         [HideInInspector] public Dictionary<TileAddress, GameObject> TileObjects = new();
+        public TextMeshProUGUI validTestimonyIndicator;
 
         public void MoveTile(TileAddress from, TileAddress to)
         {
@@ -89,6 +90,14 @@ namespace Presentation
             foreach (var tile in board.GetAllTiles())
             {
                 UpdateTileTestimonyText(tile);
+            }
+        }
+
+        public void ShowValidTestimonyCount(int count, int total)
+        {
+            if (validTestimonyIndicator != null)
+            {
+                validTestimonyIndicator.text = $"証言成立: {count} / {total}";
             }
         }
     }
