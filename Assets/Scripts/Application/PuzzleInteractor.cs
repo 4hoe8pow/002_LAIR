@@ -2,15 +2,16 @@ using Domain;
 
 namespace Application
 {
-    // Interactor: ビジネスロジック
     public class PuzzleInteractor : IPuzzleInputPort
     {
         private readonly PuzzleBoard _board;
         private readonly IPuzzleOutputPort _output;
-        public PuzzleInteractor(PuzzleBoard board, IPuzzleOutputPort output)
+        public PuzzleInteractor(PuzzleInitializeRequestDto request, IPuzzleOutputPort output)
         {
-            _board = board;
+            _board = PuzzleBoard.Create(request.GridSize, request.ToPuzzleDifficulty());
             _output = output;
+            _output.OnPuzzleInitialized(_board);
+            _output.UpdateAllTileTestimonyTexts(_board);
         }
 
         public void OnTileSwipe(TileAddress address, SwipeDirection direction)

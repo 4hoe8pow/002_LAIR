@@ -1,3 +1,5 @@
+using Application;
+using Domain;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -8,25 +10,22 @@ namespace Presentation
     public class InputHandler : MonoBehaviour
     {
         public PuzzleController controller;
-        // ここでUIイベントを受けてcontroller.OnTileSwipeを呼ぶ
-        // 例: タイルがスワイプされたとき
         private Vector2 startTouchPos;
         private Vector2 endTouchPos;
         private int selectedX, selectedY;
         [SerializeField] private float minSwipeDistance = 50f;
         [SerializeField] private PuzzlePresenter presenter;
         [SerializeField] private int gridSize = 3;
+        [SerializeField, Range(0, 2)] private int puzzleDifficulty = 0; // 0: Easy, 1: Normal, 2: Hard
 
         private void Awake()
         {
-            // Domain層のボード生成
-            var board = new Domain.PuzzleBoard(gridSize);
-            // Interactor生成
-            var interactor = new Application.PuzzleInteractor(board, presenter);
+            // DTO生成
+            var request = new PuzzleInitializeRequestDto(gridSize, puzzleDifficulty);
+            // Interactor生成（ボード生成はアプリケーション層で行う）
+            var interactor = new Application.PuzzleInteractor(request, presenter);
             // コントローラ初期化
             controller.Initialize(interactor);
-            // 盤面初期化表示
-            presenter.OnPuzzleInitialized(board);
         }
 
         private void Update()

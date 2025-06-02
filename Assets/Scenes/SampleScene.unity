@@ -519,6 +519,7 @@ MonoBehaviour:
   minSwipeDistance: 50
   presenter: {fileID: 1635045650}
   gridSize: 3
+  puzzleDifficulty: 1
 --- !u!1 &1389331846
 GameObject:
   m_ObjectHideFlags: 0

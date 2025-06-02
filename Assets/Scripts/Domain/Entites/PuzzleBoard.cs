@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Domain
 {
@@ -11,32 +13,185 @@ namespace Domain
         public int Size => _size;
         public TileAddress EmptyCell => _emptyCell;
 
-        public PuzzleBoard(int size)
+        public PuzzleBoard(int size, PuzzleDifficulty difficulty)
         {
             _size = size;
             _tiles = new Tile[size, size];
-            InitializeTiles();
+            InitializeTiles(difficulty);
         }
 
-        private void InitializeTiles()
+        public static PuzzleBoard Create(int size, PuzzleDifficulty difficulty)
         {
-            var speciesList = new List<Species> { Species.Fox, Species.Owl };
-            int speciesIndex = 0;
+            return new PuzzleBoard(size, difficulty);
+        }
+
+        private void InitializeTiles(PuzzleDifficulty difficulty)
+        {
+            int foxCount = (int)difficulty;
+            int totalTiles = _size * _size - 1;
+            int owlCount = totalTiles - foxCount;
+            var positions = Enumerable.Range(0, totalTiles)
+                .Select(i => (x: i % _size, y: i / _size)).ToArray();
+            var speciesPool = Enumerable.Repeat(Species.Fox, foxCount)
+                .Concat(Enumerable.Repeat(Species.Owl, owlCount)).ToArray();
+            var rnd = new System.Random();
+            int maxScore = -1;
+            Species[] bestPattern = null;
+            int tryCount = Math.Min(100000, Factorial(totalTiles)); // 10万回 or 全パターン少ない場合は全探索
+            for (int t = 0; t < tryCount; t++)
+            {
+                var arr = (Species[])speciesPool.Clone();
+                // Fisher-Yatesシャッフル
+                for (int i = arr.Length - 1; i > 0; i--)
+                {
+                    int j = rnd.Next(i + 1);
+                    (arr[i], arr[j]) = (arr[j], arr[i]);
+                }
+                // 仮配置
+                for (int i = 0; i < totalTiles; i++)
+                {
+                    var (x, y) = positions[i];
+                    _tiles[x, y] = new Tile(new TileAddress(x, y), arr[i], TestimonyStatement.UpIsFox);
+                }
+                int score = CountValidTestimonies();
+                if (score > maxScore)
+                {
+                    maxScore = score;
+                    bestPattern = (Species[])arr.Clone();
+                    if (score == totalTiles) break; // 全て証言通りなら即break
+                }
+            }
+            // 最良パターンを反映
+            for (int i = 0; i < totalTiles; i++)
+            {
+                var (x, y) = positions[i];
+                _tiles[x, y] = new Tile(new TileAddress(x, y), bestPattern[i], TestimonyStatement.UpIsFox);
+            }
+            _tiles[_size - 1, _size - 1] = null;
+            _emptyCell = new TileAddress(_size - 1, _size - 1);
+            AssignTestimonies();
+        }
+        private int Factorial(int n)
+        {
+            int res = 1;
+            for (int i = 2; i <= n; i++) res *= i;
+            return res;
+        }
+
+        private IEnumerable<Species[]> GetAllPermutations(Species[] arr)
+        {
+            var list = new List<Species[]>();
+            Permute(arr, 0, list);
+            return list;
+        }
+        private void Permute(Species[] arr, int k, List<Species[]> result)
+        {
+            if (k == arr.Length)
+            {
+                result.Add((Species[])arr.Clone());
+            }
+            else
+            {
+                for (int i = k; i < arr.Length; i++)
+                {
+                    (arr[k], arr[i]) = (arr[i], arr[k]);
+                    Permute(arr, k + 1, result);
+                    (arr[k], arr[i]) = (arr[i], arr[k]);
+                }
+            }
+        }
+
+        private int CountValidTestimonies()
+        {
+            int valid = 0;
+            var directions = new[]
+            {
+                (dx: 0, dy: -1, fox: TestimonyStatement.UpIsFox, owl: TestimonyStatement.UpIsOwl),
+                (dx: 0, dy: 1, fox: TestimonyStatement.DownIsFox, owl: TestimonyStatement.DownIsOwl),
+                (dx: -1, dy: 0, fox: TestimonyStatement.LeftIsFox, owl: TestimonyStatement.LeftIsOwl),
+                (dx: 1, dy: 0, fox: TestimonyStatement.RightIsFox, owl: TestimonyStatement.RightIsOwl)
+            };
             for (int y = 0; y < _size; y++)
             {
                 for (int x = 0; x < _size; x++)
                 {
-                    if (x == _size - 1 && y == _size - 1)
+                    if (x == _size - 1 && y == _size - 1) continue;
+                    var tile = _tiles[x, y];
+                    if (tile == null) continue;
+                    foreach (var (dx, dy, fox, owl) in directions)
                     {
-                        _tiles[x, y] = null;
-                        _emptyCell = new TileAddress(x, y);
+                        int nx = x + dx, ny = y + dy;
+                        if (nx < 0 || ny < 0 || nx >= _size || ny >= _size) continue;
+                        var neighbor = _tiles[nx, ny];
+                        if (neighbor == null) continue;
+                        bool testimonyTrue = false;
+                        if (tile.IsTestimonyReliable())
+                            testimonyTrue = (neighbor.IsTestimonyReliable() && owl.ToString().Contains("Owl")) || (!neighbor.IsTestimonyReliable() && fox.ToString().Contains("Fox"));
+                        else
+                            testimonyTrue = !((neighbor.IsTestimonyReliable() && owl.ToString().Contains("Owl")) || (!neighbor.IsTestimonyReliable() && fox.ToString().Contains("Fox")));
+                        if (testimonyTrue)
+                        {
+                            valid++;
+                            break;
+                        }
                     }
-                    else
-                    {
-                        var species = speciesList[speciesIndex % speciesList.Count];
-                        _tiles[x, y] = new Tile(new TileAddress(x, y), species);
-                        speciesIndex++;
-                    }
+                }
+            }
+            return valid;
+        }
+
+        // 指定座標の隣接タイルを取得（範囲外や空マスはnull）
+        private Tile GetNeighborTile(int x, int y, (int dx, int dy, TestimonyStatement fox, TestimonyStatement owl) dir)
+        {
+            int nx = x + dir.dx, ny = y + dir.dy;
+            if (nx < 0 || ny < 0 || nx >= _size || ny >= _size) return null;
+            return _tiles[nx, ny];
+        }
+
+        // 方向配列をFisher-Yatesでシャッフル
+        private void ShuffleDirections((int dx, int dy, TestimonyStatement fox, TestimonyStatement owl)[] dirs, System.Random rnd)
+        {
+            for (int i = dirs.Length - 1; i > 0; i--)
+            {
+                int j = rnd.Next(i + 1);
+                var tmp = dirs[i];
+                dirs[i] = dirs[j];
+                dirs[j] = tmp;
+            }
+        }
+
+        // 証言を決定するロジック
+        private TestimonyStatement DecideTestimony(Species self, Species neighbor, (TestimonyStatement fox, TestimonyStatement owl) dir)
+        {
+            if (self == Species.Owl)
+                return neighbor == Species.Fox ? dir.fox : dir.owl;
+            else
+                return neighbor == Species.Fox ? dir.owl : dir.fox;
+        }
+
+        // 証言割り当て本体
+        private void AssignTestimonies()
+        {
+            var directions = new[]
+            {
+                (dx: 0, dy: -1, fox: TestimonyStatement.UpIsFox, owl: TestimonyStatement.UpIsOwl),
+                (dx: 0, dy: 1, fox: TestimonyStatement.DownIsFox, owl: TestimonyStatement.DownIsOwl),
+                (dx: -1, dy: 0, fox: TestimonyStatement.LeftIsFox, owl: TestimonyStatement.LeftIsOwl),
+                (dx: 1, dy: 0, fox: TestimonyStatement.RightIsFox, owl: TestimonyStatement.RightIsOwl)
+            };
+            var rnd = new System.Random();
+            var allTiles = GetAllTiles().ToList();
+            foreach (var tile in allTiles)
+            {
+                var (x, y) = (tile.Address.X, tile.Address.Y);
+                var dirs = directions.ToArray();
+                ShuffleDirections(dirs, rnd);
+                foreach (var dir in dirs)
+                {
+                    var neighbor = GetNeighborTile(x, y, dir);
+                    if (neighbor == null) continue;
+                    tile.Testimony = DecideTestimony(tile.Species, neighbor.Species, (dir.fox, dir.owl));
+                    break;
                 }
             }
         }

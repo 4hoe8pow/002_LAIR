@@ -1,5 +1,6 @@
 using Application;
 using Domain;
+using TMPro;
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -71,6 +72,24 @@ namespace Presentation
             }
             rect.anchoredPosition = end;
             rect.sizeDelta = new Vector2(cellWidth, cellHeight);
+        }
+
+        // タイルの証言テキストを更新する
+        public void UpdateTileTestimonyText(Tile tile)
+        {
+            if (!TileObjects.TryGetValue(tile.Address, out var obj)) return;
+            var text = obj.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            if (text != null)
+                text.text = tile.Testimony.ToJapaneseString();
+        }
+
+        // 全タイルの証言テキストを一括更新する
+        public void UpdateAllTileTestimonyTexts(PuzzleBoard board)
+        {
+            foreach (var tile in board.GetAllTiles())
+            {
+                UpdateTileTestimonyText(tile);
+            }
         }
     }
 }
