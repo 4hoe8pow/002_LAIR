@@ -1,6 +1,5 @@
 using Application;
 using Domain;
-using TMPro;
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -13,7 +12,42 @@ namespace Presentation
         public RectTransform boardParent;
         public float tileSpacing = 0f;
         [HideInInspector] public Dictionary<TileAddress, GameObject> TileObjects = new();
-        public TextMeshProUGUI validTestimonyIndicator;
+
+        // 証言成立数インジケーター用
+        [Header("証言成立ゲージ")]
+        public RectTransform validTestimonyGaugeParent;
+        public GameObject validTestimonyGaugeCellPrefab;
+        private readonly List<GameObject> _gaugeCells = new();
+        public float gaugeCellSpacing = 3f; // セル間の隙間（Inspectorで調整可）
+
+        private Coroutine _gaugeAnimCoroutine;
+
+        private void Awake()
+        {
+            // ゲージのセルを8個に固定で作成
+            if (validTestimonyGaugeParent != null && validTestimonyGaugeCellPrefab != null)
+            {
+                foreach (var cell in _gaugeCells) Destroy(cell);
+                _gaugeCells.Clear();
+                int cellCount = 8;
+                float spacing = gaugeCellSpacing;
+                float parentWidth = validTestimonyGaugeParent.rect.width;
+                float cellWidth = (parentWidth - spacing * (cellCount - 1)) / cellCount;
+                float parentHeight = validTestimonyGaugeParent.rect.height;
+                for (int i = 0; i < cellCount; i++)
+                {
+                    var cell = Instantiate(validTestimonyGaugeCellPrefab, validTestimonyGaugeParent);
+                    cell.SetActive(false);
+                    var cellRect = cell.GetComponent<RectTransform>();
+                    cellRect.anchorMin = new Vector2(0, 0.5f);
+                    cellRect.anchorMax = new Vector2(0, 0.5f);
+                    cellRect.pivot = new Vector2(0, 0.5f);
+                    cellRect.sizeDelta = new Vector2(cellWidth, parentHeight);
+                    cellRect.anchoredPosition = new Vector2(i * (cellWidth + spacing), 0);
+                    _gaugeCells.Add(cell);
+                }
+            }
+        }
 
         public void MoveTile(TileAddress from, TileAddress to)
         {
@@ -95,9 +129,28 @@ namespace Presentation
 
         public void ShowValidTestimonyCount(int count, int total)
         {
-            if (validTestimonyIndicator != null)
+            if (_gaugeAnimCoroutine != null)
             {
-                validTestimonyIndicator.text = $"証言成立: {count} / {total}";
+                StopCoroutine(_gaugeAnimCoroutine);
+            }
+            _gaugeAnimCoroutine = StartCoroutine(AnimateGauge(count, total));
+        }
+
+        private System.Collections.IEnumerator AnimateGauge(int count, int total)
+        {
+            float animDelay = 0.07f; // 1セルごとの遷移速度
+            for (int i = 0; i < _gaugeCells.Count; i++)
+            {
+                bool active = i < total && i < 8;
+                _gaugeCells[i].SetActive(active);
+            }
+            for (int i = 0; i < _gaugeCells.Count; i++)
+            {
+                if (i < total && i < 8 && _gaugeCells[i].TryGetComponent<UnityEngine.UI.Image>(out var img))
+                {
+                    img.color = i < count ? Color.yellow : Color.gray;
+                }
+                yield return new UnityEngine.WaitForSeconds(animDelay);
             }
         }
     }

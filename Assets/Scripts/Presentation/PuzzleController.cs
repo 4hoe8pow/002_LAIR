@@ -1,10 +1,8 @@
 using Application;
-using Domain;
 using UnityEngine;
 
 namespace Presentation
 {
-    // コントローラ: InputHandlerから呼ばれる
     public class PuzzleController : MonoBehaviour
     {
         private IPuzzleInputPort _inputPort;
@@ -12,9 +10,9 @@ namespace Presentation
         {
             _inputPort = inputPort;
         }
-        public void OnTileSwipe(TileAddress address, SwipeDirection direction)
+        public void OnTileSwipe(int x, int y, SwipeDirection direction)
         {
-            _inputPort.OnTileSwipe(address, direction);
+            _inputPort.OnTileSwipe(x, y, direction);
         }
     }
 }

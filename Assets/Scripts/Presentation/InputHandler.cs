@@ -1,5 +1,4 @@
 using Application;
-using Domain;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -65,6 +64,7 @@ namespace Presentation
             PointerEventData ped = new(EventSystem.current) { position = screenPos };
             var results = new System.Collections.Generic.List<RaycastResult>();
             var raycaster = presenter.boardParent.GetComponentInParent<Canvas>().GetComponent<GraphicRaycaster>();
+
             raycaster.Raycast(ped, results);
             foreach (var result in results)
             {
@@ -82,12 +82,12 @@ namespace Presentation
             Vector2 delta = endTouchPos - startTouchPos;
             if (delta.magnitude < minSwipeDistance) return;
             var dir = delta.normalized;
-            Application.SwipeDirection swipeDir;
+            SwipeDirection swipeDir;
             if (Mathf.Abs(dir.x) > Mathf.Abs(dir.y))
-                swipeDir = dir.x > 0 ? Application.SwipeDirection.Right : Application.SwipeDirection.Left;
+                swipeDir = dir.x > 0 ? SwipeDirection.Right : SwipeDirection.Left;
             else
-                swipeDir = dir.y > 0 ? Application.SwipeDirection.Up : Application.SwipeDirection.Down;
-            controller.OnTileSwipe(new Domain.TileAddress(selectedX, selectedY), swipeDir);
+                swipeDir = dir.y > 0 ? SwipeDirection.Up : SwipeDirection.Down;
+            controller.OnTileSwipe(selectedX, selectedY, swipeDir);
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Domain.Services;
 
 namespace Domain
 {
@@ -23,6 +24,17 @@ namespace Domain
         public static PuzzleBoard Create(int size, PuzzleDifficulty difficulty)
         {
             return new PuzzleBoard(size, difficulty);
+        }
+
+        public void SwapWithEmpty(TileAddress address)
+        {
+            if (!IsAdjacentToEmpty(address)) return;
+
+            var movingTile = _tiles[address.X, address.Y];
+            _tiles[_emptyCell.X, _emptyCell.Y] = movingTile;
+            _tiles[address.X, address.Y] = null;
+            movingTile?.MoveTo(_emptyCell);
+            _emptyCell = address;
         }
 
         private void InitializeTiles(PuzzleDifficulty difficulty)
@@ -53,7 +65,7 @@ namespace Domain
                     var (x, y) = positions[i];
                     _tiles[x, y] = new Tile(new TileAddress(x, y), arr[i], TestimonyStatement.UpIsFox);
                 }
-                int score = CountValidTestimonies();
+                int score = TestimonyCountService.CountValidTestimonies(this);
                 if (score > maxScore)
                 {
                     maxScore = score;
@@ -70,7 +82,38 @@ namespace Domain
             _tiles[_size - 1, _size - 1] = null;
             _emptyCell = new TileAddress(_size - 1, _size - 1);
             AssignTestimonies();
+            ShuffleAndMakePuzzle();
         }
+
+        // ランダムシャッフルして作問する処理を分離
+        private void ShuffleAndMakePuzzle()
+        {
+            var rndSwap = new Random();
+            int validTestimonies = TestimonyCountService.CountValidTestimonies(this);
+            int maxShuffle = 100000; // 無限ループ防止
+            int shuffleCount = 0;
+            while (validTestimonies > 0 && shuffleCount < maxShuffle)
+            {
+                // 空きマスに隣接するタイルを列挙
+                var neighbors = new List<TileAddress>();
+                int ex = _emptyCell.X, ey = _emptyCell.Y;
+                var dirs = new[] { (dx: 0, dy: -1), (dx: 0, dy: 1), (dx: -1, dy: 0), (dx: 1, dy: 0) };
+                foreach (var (dx, dy) in dirs)
+                {
+                    int nx = ex + dx, ny = ey + dy;
+                    if (nx >= 0 && ny >= 0 && nx < _size && ny < _size && _tiles[nx, ny] != null)
+                        neighbors.Add(new TileAddress(nx, ny));
+                }
+                if (neighbors.Count == 0) break;
+
+                // ランダムに1つ選んでSwap
+                var addr = neighbors[rndSwap.Next(neighbors.Count)];
+                SwapWithEmpty(addr);
+                validTestimonies = TestimonyCountService.CountValidTestimonies(this);
+                shuffleCount++;
+            }
+        }
+
         private int Factorial(int n)
         {
             int res = 1;
@@ -78,12 +121,6 @@ namespace Domain
             return res;
         }
 
-        private IEnumerable<Species[]> GetAllPermutations(Species[] arr)
-        {
-            var list = new List<Species[]>();
-            Permute(arr, 0, list);
-            return list;
-        }
         private void Permute(Species[] arr, int k, List<Species[]> result)
         {
             if (k == arr.Length)
@@ -101,45 +138,6 @@ namespace Domain
             }
         }
 
-        private int CountValidTestimonies()
-        {
-            int valid = 0;
-            var directions = new[]
-            {
-                (dx: 0, dy: -1, fox: TestimonyStatement.UpIsFox, owl: TestimonyStatement.UpIsOwl),
-                (dx: 0, dy: 1, fox: TestimonyStatement.DownIsFox, owl: TestimonyStatement.DownIsOwl),
-                (dx: -1, dy: 0, fox: TestimonyStatement.LeftIsFox, owl: TestimonyStatement.LeftIsOwl),
-                (dx: 1, dy: 0, fox: TestimonyStatement.RightIsFox, owl: TestimonyStatement.RightIsOwl)
-            };
-            for (int y = 0; y < _size; y++)
-            {
-                for (int x = 0; x < _size; x++)
-                {
-                    if (x == _size - 1 && y == _size - 1) continue;
-                    var tile = _tiles[x, y];
-                    if (tile == null) continue;
-                    foreach (var (dx, dy, fox, owl) in directions)
-                    {
-                        int nx = x + dx, ny = y + dy;
-                        if (nx < 0 || ny < 0 || nx >= _size || ny >= _size) continue;
-                        var neighbor = _tiles[nx, ny];
-                        if (neighbor == null) continue;
-                        bool testimonyTrue = false;
-                        if (tile.IsTestimonyReliable())
-                            testimonyTrue = (neighbor.IsTestimonyReliable() && owl.ToString().Contains("Owl")) || (!neighbor.IsTestimonyReliable() && fox.ToString().Contains("Fox"));
-                        else
-                            testimonyTrue = !((neighbor.IsTestimonyReliable() && owl.ToString().Contains("Owl")) || (!neighbor.IsTestimonyReliable() && fox.ToString().Contains("Fox")));
-                        if (testimonyTrue)
-                        {
-                            valid++;
-                            break;
-                        }
-                    }
-                }
-            }
-            return valid;
-        }
-
         // 指定座標の隣接タイルを取得（範囲外や空マスはnull）
         private Tile GetNeighborTile(int x, int y, (int dx, int dy, TestimonyStatement fox, TestimonyStatement owl) dir)
         {
@@ -154,9 +152,7 @@ namespace Domain
             for (int i = dirs.Length - 1; i > 0; i--)
             {
                 int j = rnd.Next(i + 1);
-                var tmp = dirs[i];
-                dirs[i] = dirs[j];
-                dirs[j] = tmp;
+                (dirs[j], dirs[i]) = (dirs[i], dirs[j]);
             }
         }
 
@@ -203,19 +199,9 @@ namespace Domain
 
         public bool IsAdjacentToEmpty(TileAddress address)
         {
-            int dx = System.Math.Abs(_emptyCell.X - address.X);
-            int dy = System.Math.Abs(_emptyCell.Y - address.Y);
+            int dx = Math.Abs(_emptyCell.X - address.X);
+            int dy = Math.Abs(_emptyCell.Y - address.Y);
             return dx + dy == 1;
-        }
-
-        public void SwapWithEmpty(TileAddress address)
-        {
-            if (!IsAdjacentToEmpty(address)) return;
-            var movingTile = _tiles[address.X, address.Y];
-            _tiles[_emptyCell.X, _emptyCell.Y] = movingTile;
-            _tiles[address.X, address.Y] = null;
-            movingTile?.MoveTo(_emptyCell);
-            _emptyCell = address;
         }
 
         public IEnumerable<Tile> GetAllTiles()

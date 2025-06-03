@@ -16,8 +16,9 @@ namespace Application
             ShowTestimonyIndicator();
         }
 
-        public void OnTileSwipe(TileAddress address, SwipeDirection direction)
+        public void OnTileSwipe(int x, int y, SwipeDirection direction)
         {
+            var address = new TileAddress(x, y);
             if (!_board.IsAdjacentToEmpty(address)) return;
             var empty = _board.EmptyCell;
             _board.SwapWithEmpty(address);
