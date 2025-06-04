@@ -754,6 +754,7 @@ MonoBehaviour:
   tileSpacing: 16
   validTestimonyGaugeParent: {fileID: 599358235}
   validTestimonyGaugeCellPrefab: {fileID: 665024673511303955, guid: afda4d055fb2d411a95ecb1daf5ae4e4, type: 3}
+  gaugeCellSpacing: 3
 --- !u!1 &2042932341
 GameObject:
   m_ObjectHideFlags: 0
