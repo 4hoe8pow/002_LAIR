@@ -46,7 +46,7 @@ namespace Domain
                 .Select(i => (x: i % _size, y: i / _size)).ToArray();
             var speciesPool = Enumerable.Repeat(Species.Fox, foxCount)
                 .Concat(Enumerable.Repeat(Species.Owl, owlCount)).ToArray();
-            var rnd = new System.Random();
+            var rnd = new Random();
             int maxScore = -1;
             Species[] bestPattern = null;
             int tryCount = Math.Min(100000, Factorial(totalTiles)); // 10万回 or 全パターン少ない場合は全探索
@@ -165,9 +165,13 @@ namespace Domain
                 return neighbor == Species.Fox ? dir.owl : dir.fox;
         }
 
-        // 証言割り当て本体
+        // 証言割り当て
         private void AssignTestimonies()
         {
+            int totalTiles = _size * _size - 1;
+            var allTiles = GetAllTiles().ToList();
+            if (allTiles.Count != totalTiles)
+                throw new InvalidOperationException($"AssignTestimonies: タイル数不一致 (expected={totalTiles}, actual={allTiles.Count})");
             var directions = new[]
             {
                 (dx: 0, dy: -1, fox: TestimonyStatement.UpIsFox, owl: TestimonyStatement.UpIsOwl),
@@ -175,8 +179,7 @@ namespace Domain
                 (dx: -1, dy: 0, fox: TestimonyStatement.LeftIsFox, owl: TestimonyStatement.LeftIsOwl),
                 (dx: 1, dy: 0, fox: TestimonyStatement.RightIsFox, owl: TestimonyStatement.RightIsOwl)
             };
-            var rnd = new System.Random();
-            var allTiles = GetAllTiles().ToList();
+            var rnd = new Random();
             foreach (var tile in allTiles)
             {
                 var (x, y) = (tile.Address.X, tile.Address.Y);
@@ -190,6 +193,11 @@ namespace Domain
                     break;
                 }
             }
+            // 証言正答数チェック
+            int validCount = TestimonyCountService.CountValidTestimonies(this);
+            UnityEngine.Debug.Log($"AssignTestimonies: 証言正答数={validCount} (expected={totalTiles})");
+            if (validCount != totalTiles)
+                throw new InvalidOperationException($"AssignTestimonies: 証言正答数不一致 (expected={totalTiles}, actual={validCount})");
         }
 
         public Tile GetTile(TileAddress address)

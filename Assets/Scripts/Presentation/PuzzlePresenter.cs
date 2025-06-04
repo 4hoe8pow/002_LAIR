@@ -18,9 +18,11 @@ namespace Presentation
         public RectTransform validTestimonyGaugeParent;
         public GameObject validTestimonyGaugeCellPrefab;
         private readonly List<GameObject> _gaugeCells = new();
-        public float gaugeCellSpacing = 3f; // セル間の隙間（Inspectorで調整可）
+        public float gaugeCellSpacing = 3f; // セル間の隙間
 
         private Coroutine _gaugeAnimCoroutine;
+
+        public ParticleSystem victoryEffectParticle;
 
         private void Awake()
         {
@@ -150,7 +152,15 @@ namespace Presentation
                 {
                     img.color = i < count ? Color.yellow : Color.gray;
                 }
-                yield return new UnityEngine.WaitForSeconds(animDelay);
+                yield return new WaitForSeconds(animDelay);
+            }
+        }
+
+        public void PlayVictoryEffect()
+        {
+            if (victoryEffectParticle != null)
+            {
+                victoryEffectParticle.Play();
             }
         }
     }

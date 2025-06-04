@@ -9,5 +9,6 @@ namespace Application
         void UpdateTileTestimonyText(Tile tile);
         void UpdateAllTileTestimonyTexts(PuzzleBoard board);
         void ShowValidTestimonyCount(int count, int total);
+        void PlayVictoryEffect();
     }
 }

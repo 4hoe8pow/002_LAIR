@@ -31,6 +31,14 @@ namespace Application
             int valid = TestimonyCountService.CountValidTestimonies(_board);
             int total = _board.Size * _board.Size - 1;
             _output.ShowValidTestimonyCount(valid, total);
+
+            UnityEngine.Debug.Log($"Valid testimonies: {valid}/{total}");
+
+            if (valid == total)
+            {
+                UnityEngine.Debug.Log($"Victory! All testimonies are valid.");
+                _output.PlayVictoryEffect();
+            }
         }
     }
 }

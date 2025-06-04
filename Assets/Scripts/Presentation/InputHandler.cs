@@ -19,10 +19,12 @@ namespace Presentation
 
         private void Awake()
         {
+            // PlayerPrefsから難易度を取得（なければデフォルト値0）
+            puzzleDifficulty = PlayerPrefs.GetInt("puzzleDifficulty", puzzleDifficulty);
             // DTO生成
             var request = new PuzzleInitializeRequestDto(gridSize, puzzleDifficulty);
-            // Interactor生成（ボード生成はアプリケーション層で行う）
-            var interactor = new Application.PuzzleInteractor(request, presenter);
+            // Interactor生成
+            var interactor = new PuzzleInteractor(request, presenter);
             // コントローラ初期化
             controller.Initialize(interactor);
         }
